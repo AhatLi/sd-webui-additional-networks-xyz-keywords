@@ -102,6 +102,11 @@ def apply_model(p, x, xs, i):
     update_script_args(p, True, 0)
     update_script_args(p, name, 3 + 4 * i)  # enabled, separate_weights, (module, {model}, weight_unet, weight_tenc), ...
 
+def apply_model_keyword(p, x, xs, i):
+    name = model_util.find_closest_lora_model_name(x)
+    model_path = model_util.lora_models.get(name)
+    metadata = model_util.read_model_metadata(model_path, "LoRA")    
+    p.prompt = p.prompt + ", " + metadata.get("ssmd_keywords", "")
 
 def apply_weight(p, x, xs, i):
     update_script_args(p, True, 0)
@@ -162,6 +167,15 @@ def initialize(script):
                     cost=0.5,
                     choices=lambda i=i: get_axis_model_choices(i),
                 )
+                model_keyword = xy_grid.AxisOption(
+                    f"AddNet Keyword {i+1}",
+                    str,
+                    lambda p, x, xs, i=i: apply_model_keyword(p, x, xs, i),
+                    format_lora_model,
+                    confirm_models,
+                    cost=0.5,
+                    choices=lambda i=i: get_axis_model_choices(i),
+                )
                 weight = xy_grid.AxisOption(
                     f"AddNet Weight {i+1}",
                     float,
@@ -186,4 +200,4 @@ def initialize(script):
                     None,
                     cost=0.5,
                 )
-                xy_grid.axis_options.extend([model, weight, weight_unet, weight_tenc])
+                xy_grid.axis_options.extend([model, model_keyword, weight, weight_unet, weight_tenc])
